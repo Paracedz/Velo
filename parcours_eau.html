@@ -304,6 +304,38 @@
       70%  { box-shadow: 0 0 0 10px rgba(86,211,100,0); }
       100% { box-shadow: 0 0 0 0 rgba(86,211,100,0); }
     }
+
+    nav {
+      display: flex;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 4px;
+      gap: 3px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-btn .nav-icon { font-size: 1.3rem; }
+    .nav-btn.active { color: var(--water); border-top: 2px solid var(--water); }
+    .nav-btn:hover { color: var(--text); }
   </style>
 </head>
 <body>
@@ -328,13 +360,10 @@
         <input type="range" id="dist-filter" min="100" max="2000" step="50" value="300">
         <span class="range-val" id="dist-val">300 m</span>
       </div>
-      <button class="btn" id="btn-fit">Centrer</button>
       <button class="btn" id="btn-locate">📍 Ma position</button>
       <div class="layer-selector">
-        <button class="btn layer-btn" data-layer="carto-dark">🌑 Sombre</button>
         <button class="btn layer-btn" data-layer="osm">🗺️ OSM Standard</button>
         <button class="btn layer-btn active" data-layer="topo">🏔️ OpenTopo</button>
-        <button class="btn layer-btn" data-layer="humanitarian">🌍 Humanitarian</button>
         <button class="btn layer-btn" data-layer="cyclosm">🚴 CyclOSM</button>
       </div>
     </div>
@@ -367,10 +396,6 @@
 
     // Tile layers (all open source / free)
     const LAYERS = {
-      'carto-dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
-        subdomains: 'abcd', maxZoom: 19
-      }),
       'osm': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19
@@ -378,10 +403,6 @@
       'topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map: © <a href="https://opentopomap.org">OpenTopoMap</a>',
         subdomains: 'abc', maxZoom: 17
-      }),
-      'humanitarian': L.tileLayer('https://tile-{s}.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles courtesy of <a href="http://hot.openstreetmap.org/">Humanitarian OpenStreetMap Team</a>',
-        subdomains: 'abc', maxZoom: 19
       }),
       'cyclosm': L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://www.cyclosm.org">CyclOSM</a>',
@@ -472,11 +493,6 @@
       distVal.textContent = v + ' m';
       document.querySelector('.legend-item:last-child').innerHTML = `<div class="legend-dot"></div>Point d'eau (≤ ${v} m)`;
       renderWater(v);
-    });
-
-    // Fit button
-    document.getElementById('btn-fit').addEventListener('click', () => {
-      map.fitBounds(trackLine.getBounds(), { padding: [30, 30] });
     });
 
     // Daily stage points
@@ -586,5 +602,13 @@
       );
     });
   </script>
+  <nav>
+    <a class="nav-btn active" href="parcours_eau.html">
+      <span class="nav-icon">🗺️</span>Mon Parcours
+    </a>
+    <a class="nav-btn" href="points_eau.html">
+      <span class="nav-icon">💧</span>Points d'Eau
+    </a>
+  </nav>
 </body>
 </html>

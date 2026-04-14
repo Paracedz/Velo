@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Points d'Eau à Proximité</title>
+  <meta name="theme-color" content="#0d1117">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Points d'Eau">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2333;
+      --border: #30363d;
+      --blue: #2ea8e0;
+      --blue-light: #79c0ff;
+      --water: #58a6ff;
+      --green: #56d364;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #f0883e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Raleway', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .header-title .icon { font-size: 1.4rem; }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-value {
+      font-family: 'Fira Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .stat.blue .stat-value { color: var(--water); }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .filter-group label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--water);
+      cursor: pointer;
+    }
+
+    .range-val {
+      font-family: 'Fira Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--water);
+      min-width: 50px;
+    }
+
+    .btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { background: var(--border); }
+    .btn.active { background: var(--green); color: #000; border-color: var(--green); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .layer-selector {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .layer-btn { font-size: 0.7rem; padding: 4px 9px; }
+    .layer-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+    #map {
+      flex: 1;
+      width: 100%;
+    }
+
+    .leaflet-container { background: #0d1117; }
+
+    .leaflet-popup-content-wrapper {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      font-family: 'Raleway', sans-serif;
+    }
+
+    .leaflet-popup-tip { background: var(--surface); }
+    .leaflet-popup-close-button { color: var(--muted) !important; }
+
+    .popup-inner { min-width: 160px; }
+
+    .popup-inner h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--water);
+      margin-bottom: 4px;
+    }
+
+    .popup-inner .dept {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .popup-inner .dist-badge {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'Fira Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--green);
+    }
+
+    .popup-inner .operator {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .popup-inner .gmaps-link {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--blue-light);
+      font-size: 0.72rem;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+
+    .popup-inner .gmaps-link:hover {
+      background: var(--border);
+      color: #fff;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 60px;
+      left: 12px;
+      z-index: 1000;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      line-height: 1.8;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--water);
+      border: 2px solid rgba(88,166,255,0.4);
+      flex-shrink: 0;
+    }
+
+    .legend-dot-me {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #56d364;
+      border: 2px solid rgba(86,211,100,0.4);
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(86,211,100,0.6); }
+      70%  { box-shadow: 0 0 0 10px rgba(86,211,100,0); }
+      100% { box-shadow: 0 0 0 0 rgba(86,211,100,0); }
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(13,17,23,0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+
+    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--water);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Hint message shown before geolocation */
+    #hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 28px;
+      text-align: center;
+      max-width: 260px;
+      pointer-events: none;
+    }
+
+    #hint .hint-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    #hint p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+    #hint strong { color: var(--text); }
+
+    nav {
+      display: flex;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 4px;
+      gap: 3px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-btn .nav-icon { font-size: 1.3rem; }
+    .nav-btn.active { color: var(--water); border-top: 2px solid var(--water); }
+    .nav-btn:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-title">
+      <span class="icon">💧</span>
+      <h1>Points d'Eau à Proximité</h1>
+    </div>
+    <div class="stats">
+      <div class="stat blue">
+        <span class="stat-value" id="count-water">—</span>
+        <span class="stat-label">Points d'eau</span>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="filter-group">
+        <label>Rayon</label>
+        <input type="range" id="dist-filter" min="100" max="3000" step="100" value="300" disabled>
+        <span class="range-val" id="dist-val">300 m</span>
+      </div>
+      <button class="btn" id="btn-locate">📍 Ma position</button>
+      <div class="layer-selector">
+        <button class="btn layer-btn" data-layer="osm">🗺️ OSM</button>
+        <button class="btn layer-btn active" data-layer="topo">🏔️ OpenTopo</button>
+        <button class="btn layer-btn" data-layer="cyclosm">🚴 CyclOSM</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="map">
+    <div id="hint">
+      <div class="hint-icon">📍</div>
+      <p>Appuyez sur <strong>Ma position</strong> pour afficher les points d'eau autour de vous.</p>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item" id="legend-me" style="display:none"><div class="legend-dot-me"></div>Ma position</div>
+    <div class="legend-item" id="legend-water" style="display:none"><div class="legend-dot"></div>Point d'eau</div>
+  </div>
+
+  <div id="loading-overlay" class="hidden">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Chargement des données…</div>
+  </div>
+
+  <nav>
+    <a class="nav-btn" href="parcours_eau.html">
+      <span class="nav-icon">🗺️</span>Mon Parcours
+    </a>
+    <a class="nav-btn active" href="points_eau.html">
+      <span class="nav-icon">💧</span>Points d'Eau
+    </a>
+  </nav>
+
+  <script>
+    // ── Map init ──────────────────────────────────────────────
+    const map = L.map('map', { preferCanvas: true, zoomControl: true });
+
+    const LAYERS = {
+      'osm': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }),
+      'topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | © <a href="https://opentopomap.org">OpenTopoMap</a>',
+        subdomains: 'abc', maxZoom: 17
+      }),
+      'cyclosm': L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://www.cyclosm.org">CyclOSM</a>',
+        subdomains: 'abc', maxZoom: 20
+      })
+    };
+
+    let currentLayerKey = 'topo';
+    LAYERS['topo'].addTo(map);
+    map.setView([46.5, 2.5], 6); // France par défaut
+
+    document.querySelectorAll('.layer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.layer;
+        if (key === currentLayerKey) return;
+        map.removeLayer(LAYERS[currentLayerKey]);
+        LAYERS[key].addTo(map);
+        currentLayerKey = key;
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // ── Données eau ───────────────────────────────────────────
+    let WATER = null; // chargé une seule fois
+    let waterLoaded = false;
+
+    function showLoading(msg) {
+      document.getElementById('loading-text').textContent = msg;
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    async function loadWaterData() {
+      if (waterLoaded) return true;
+      showLoading('Chargement des points d\'eau…');
+      try {
+        const resp = await fetch('./Eau.gpx');
+        if (!resp.ok) throw new Error('Fichier Eau.gpx introuvable');
+        let text = await resp.text();
+        // Fix unescaped & in XML
+        text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, '&amp;');
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'application/xml');
+        const wpts = xml.querySelectorAll('wpt');
+        WATER = [];
+        wpts.forEach(w => {
+          const lat = parseFloat(w.getAttribute('lat'));
+          const lon = parseFloat(w.getAttribute('lon'));
+          const op = w.querySelector('operator') ? w.querySelector('operator').textContent : '';
+          const com = w.querySelector('meta_name_com') ? w.querySelector('meta_name_com').textContent : '';
+          const dep = w.querySelector('meta_name_dep') ? w.querySelector('meta_name_dep').textContent : '';
+          if (!isNaN(lat) && !isNaN(lon)) WATER.push({ lat, lon, operator: op, commune: com, departement: dep });
+        });
+        waterLoaded = true;
+        hideLoading();
+        return true;
+      } catch(e) {
+        hideLoading();
+        alert('Impossible de charger Eau.gpx : ' + e.message + '\n\nAssurez-vous que le fichier est dans le même dossier que cette page.');
+        return false;
+      }
+    }
+
+    // ── Haversine ─────────────────────────────────────────────
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    // ── Icône point d'eau ─────────────────────────────────────
+    function makeIcon(dist, maxDist) {
+      const intensity = 1 - (dist / maxDist);
+      const size = Math.round(8 + intensity * 7);
+      return L.divIcon({
+        className: '',
+        html: `<div style="
+          width:${size}px;height:${size}px;
+          border-radius:50%;
+          background:rgba(88,166,255,0.85);
+          border:2px solid rgba(88,166,255,0.3);
+          box-shadow:0 0 ${Math.round(intensity*12)}px rgba(88,166,255,0.6);
+        "></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+    }
+
+    // ── Position & rendu ──────────────────────────────────────
+    let meMarker = null;
+    let meAccCircle = null;
+    let meRadiusCircle = null;
+    let markerLayer = L.layerGroup().addTo(map);
+    let myLat = null, myLon = null;
+
+    const meIcon = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:16px;height:16px;
+        border-radius:50%;
+        background:#56d364;
+        border:3px solid white;
+        box-shadow:0 0 0 2px #56d364;
+        animation:pulse 2s infinite;
+      "></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+
+    function renderWaterAround(lat, lon, maxDist) {
+      markerLayer.clearLayers();
+      if (!WATER) return;
+
+      // Bbox pre-filter (1 degree ~ 111km, generous)
+      const margin = (maxDist / 111000) + 0.005;
+      const filtered = WATER.filter(w => {
+        if (Math.abs(w.lat - lat) > margin || Math.abs(w.lon - lon) > margin) return false;
+        const d = haversine(lat, lon, w.lat, w.lon);
+        if (d <= maxDist) { w._dist = Math.round(d); return true; }
+        return false;
+      });
+
+      document.getElementById('count-water').textContent = filtered.length.toLocaleString('fr-FR');
+      document.getElementById('legend-water').style.display = filtered.length ? 'flex' : 'none';
+
+      filtered.forEach(w => {
+        const gmapsUrl = `https://www.google.com/maps?q=${w.lat},${w.lon}&z=17`;
+        const commune = w.commune || 'Point d\'eau';
+        const op = w.operator ? `<div class="operator">${w.operator}</div>` : '';
+        const m = L.marker([w.lat, w.lon], { icon: makeIcon(w._dist, maxDist) });
+        m.bindPopup(`
+          <div class="popup-inner">
+            <h3>💧 ${commune}</h3>
+            <div class="dept">${w.departement}</div>
+            <span class="dist-badge">à ${w._dist} m</span>
+            ${op}
+            <a class="gmaps-link" href="${gmapsUrl}" target="_blank" rel="noopener">📍 Ouvrir dans Google Maps</a>
+          </div>
+        `, { maxWidth: 240 });
+        markerLayer.addLayer(m);
+      });
+
+      // Cercle de rayon
+      if (meRadiusCircle) map.removeLayer(meRadiusCircle);
+      meRadiusCircle = L.circle([lat, lon], {
+        radius: maxDist,
+        color: 'rgba(88,166,255,0.5)',
+        fillColor: 'rgba(88,166,255,0.04)',
+        fillOpacity: 1,
+        weight: 1.5,
+        dashArray: '6 4'
+      }).addTo(map);
+    }
+
+    // Slider (actif seulement après géolocalisation)
+    const slider = document.getElementById('dist-filter');
+    const distVal = document.getElementById('dist-val');
+
+    slider.addEventListener('input', () => {
+      const v = parseInt(slider.value);
+      distVal.textContent = v >= 1000 ? (v/1000).toFixed(1) + ' km' : v + ' m';
+      if (myLat !== null) renderWaterAround(myLat, myLon, v);
+    });
+
+    // Bouton Ma position
+    document.getElementById('btn-locate').addEventListener('click', async () => {
+      if (!navigator.geolocation) {
+        alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        return;
+      }
+
+      const btn = document.getElementById('btn-locate');
+      btn.textContent = '⏳ Localisation…';
+      btn.disabled = true;
+
+      // Charger les données si pas encore fait
+      const ok = await loadWaterData();
+      if (!ok) { btn.textContent = '📍 Ma position'; btn.disabled = false; return; }
+
+      showLoading('Acquisition GPS…');
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          hideLoading();
+          myLat = pos.coords.latitude;
+          myLon = pos.coords.longitude;
+          const acc = pos.coords.accuracy;
+
+          if (meMarker) { map.removeLayer(meMarker); }
+          if (meAccCircle) { map.removeLayer(meAccCircle); }
+
+          meAccCircle = L.circle([myLat, myLon], {
+            radius: acc,
+            color: '#56d364',
+            fillColor: '#56d364',
+            fillOpacity: 0.08,
+            weight: 1
+          }).addTo(map);
+
+          meMarker = L.marker([myLat, myLon], { icon: meIcon, zIndexOffset: 2000 })
+            .bindPopup(`
+              <div class="popup-inner">
+                <h3 style="color:#56d364">🟢 Ma position</h3>
+                <div class="dept">${myLat.toFixed(5)}, ${myLon.toFixed(5)}</div>
+                <div class="dept">Précision : ±${Math.round(acc)} m</div>
+                <a class="gmaps-link" href="https://www.google.com/maps?q=${myLat},${myLon}&z=16" target="_blank" rel="noopener">📍 Ouvrir dans Google Maps</a>
+              </div>
+            `, { maxWidth: 220 })
+            .addTo(map);
+
+          // Masquer le hint
+          const hint = document.getElementById('hint');
+          if (hint) hint.style.display = 'none';
+
+          // Activer le slider
+          slider.disabled = false;
+          document.getElementById('legend-me').style.display = 'flex';
+
+          const maxDist = parseInt(slider.value);
+          map.setView([myLat, myLon], 14);
+          renderWaterAround(myLat, myLon, maxDist);
+
+          btn.textContent = '📍 Ma position';
+          btn.disabled = false;
+          btn.classList.add('active');
+        },
+        (err) => {
+          hideLoading();
+          alert("Impossible d'obtenir votre position : " + err.message);
+          btn.textContent = '📍 Ma position';
+          btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 15000 }
+      );
+    });
+  </script>
+</body>
+</html>
