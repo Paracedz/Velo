@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Ma Trace GPX</title>
+  <meta name="theme-color" content="#0d1117">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ma Trace">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2333;
+      --border: #30363d;
+      --blue: #2ea8e0;
+      --blue-light: #79c0ff;
+      --water: #58a6ff;
+      --green: #56d364;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #f0883e;
+      --track: #ff1a1a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Raleway', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .header-title .icon { font-size: 1.4rem; }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-value {
+      font-family: 'Fira Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .stat.blue .stat-value  { color: var(--water); }
+    .stat.red .stat-value   { color: var(--track); }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .filter-group label { font-weight: 600; color: var(--text); }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--water);
+      cursor: pointer;
+    }
+
+    .range-val {
+      font-family: 'Fira Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--water);
+      min-width: 50px;
+    }
+
+    .btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover  { background: var(--border); }
+    .btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .layer-selector { display: flex; gap: 4px; flex-wrap: wrap; }
+    .layer-btn { font-size: 0.7rem; padding: 4px 9px; }
+    .layer-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+    /* Upload zone */
+    #upload-zone {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: var(--bg);
+      padding: 32px;
+    }
+
+    .upload-card {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 40px 32px;
+      text-align: center;
+      max-width: 340px;
+      width: 100%;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+
+    .upload-card.dragover {
+      border-color: var(--water);
+      background: var(--surface2);
+    }
+
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+
+    .upload-card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .upload-card p {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .upload-card .btn-upload {
+      display: inline-block;
+      padding: 8px 20px;
+      background: var(--water);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .upload-card .btn-upload:hover { opacity: 0.85; }
+
+    #file-input { display: none; }
+
+    /* Map */
+    #map { flex: 1; width: 100%; display: none; }
+
+    /* Legend */
+    .legend {
+      position: absolute;
+      bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 8px);
+      left: 12px;
+      z-index: 1000;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      line-height: 1.8;
+      display: none;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+    }
+
+    .legend-line {
+      width: 24px; height: 3px;
+      border-radius: 2px;
+      background: var(--track);
+      flex-shrink: 0;
+    }
+
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--water);
+      border: 2px solid rgba(88,166,255,0.4);
+      flex-shrink: 0;
+    }
+
+    /* Popups */
+    .leaflet-container { background: #0d1117; }
+
+    .leaflet-popup-content-wrapper {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      font-family: 'Raleway', sans-serif;
+    }
+
+    .leaflet-popup-tip { background: var(--surface); }
+    .leaflet-popup-close-button { color: var(--muted) !important; }
+
+    .popup-inner { min-width: 160px; }
+
+    .popup-inner h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--water);
+      margin-bottom: 4px;
+    }
+
+    .popup-inner .dept {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .popup-inner .dist-badge {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'Fira Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--green);
+    }
+
+    .popup-inner .operator {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .popup-inner .gmaps-link {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--blue-light);
+      font-size: 0.72rem;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+
+    .popup-inner .gmaps-link:hover { background: var(--border); color: #fff; }
+
+    /* Loading */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(13,17,23,0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      transition: opacity 0.3s;
+    }
+
+    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--water);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Reset button */
+    #btn-reset {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      z-index: 1000;
+      display: none;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 4px;
+      gap: 5px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s;
+      min-height: 72px;
+    }
+
+    .nav-btn .nav-icon { font-size: 1.7rem; }
+    .nav-btn.active { color: var(--water); border-top: 3px solid var(--water); }
+    .nav-btn:hover { color: var(--text); }
+
+    .version {
+      position: absolute;
+      bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 6px);
+      right: 10px;
+      z-index: 999;
+      font-family: 'Fira Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--border);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header (caché au début) -->
+  <header id="main-header" style="display:none">
+    <div class="header-title">
+      <span class="icon">📂</span>
+      <h1 id="trace-name">Ma Trace</h1>
+    </div>
+    <div class="stats">
+      <div class="stat blue">
+        <span class="stat-value" id="count-water">—</span>
+        <span class="stat-label">Points d'eau</span>
+      </div>
+      <div class="stat red">
+        <span class="stat-value" id="count-pts">—</span>
+        <span class="stat-label">Points GPS</span>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="filter-group">
+        <label>Distance</label>
+        <input type="range" id="dist-filter" min="100" max="2000" step="50" value="300">
+        <span class="range-val" id="dist-val">300 m</span>
+      </div>
+      <div class="layer-selector">
+        <button class="btn layer-btn" data-layer="osm">🗺️ OSM</button>
+        <button class="btn layer-btn active" data-layer="topo">🏔️ OpenTopo</button>
+        <button class="btn layer-btn" data-layer="cyclosm">🚴 CyclOSM</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Zone d'upload -->
+  <div id="upload-zone">
+    <div class="upload-card" id="drop-area">
+      <div class="upload-icon">📂</div>
+      <h2>Charger une trace GPX</h2>
+      <p>Déposez votre fichier <strong>.gpx</strong> ici, ou cliquez pour le sélectionner.<br>Les points d'eau à moins de 300 m seront affichés automatiquement.</p>
+      <label class="btn-upload" for="file-input">Choisir un fichier GPX</label>
+      <input type="file" id="file-input" accept=".gpx">
+    </div>
+  </div>
+
+  <!-- Carte -->
+  <div id="map"></div>
+
+  <!-- Bouton changer de trace -->
+  <button class="btn" id="btn-reset">🔄 Nouvelle trace</button>
+
+  <!-- Légende -->
+  <div class="legend" id="legend">
+    <div class="legend-item"><div class="legend-line"></div>Trace GPX</div>
+    <div class="legend-item" id="legend-water" style="display:none"><div class="legend-dot"></div><span id="legend-water-label">Points d'eau (≤ 300 m)</span></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading-overlay" class="hidden">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Chargement…</div>
+  </div>
+
+  <div class="version">v2.0</div>
+  <nav>
+    <a class="nav-btn" href="parcours_eau.html">
+      <span class="nav-icon">🗺️</span>Mon Parcours
+    </a>
+    <a class="nav-btn" href="points_eau.html">
+      <span class="nav-icon">💧</span>Points d'Eau
+    </a>
+    <a class="nav-btn active" href="ma_trace.html">
+      <span class="nav-icon">📂</span>Ma Trace
+    </a>
+  </nav>
+
+  <script>
+    // ── Map ───────────────────────────────────────────────────
+    const map = L.map('map', { preferCanvas: true, zoomControl: true });
+
+    const LAYERS = {
+      'osm': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }),
+      'topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | © <a href="https://opentopomap.org">OpenTopoMap</a>',
+        subdomains: 'abc', maxZoom: 17
+      }),
+      'cyclosm': L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://www.cyclosm.org">CyclOSM</a>',
+        subdomains: 'abc', maxZoom: 20
+      })
+    };
+
+    let currentLayerKey = 'topo';
+    LAYERS['topo'].addTo(map);
+    map.setView([46.5, 2.5], 6);
+
+    document.querySelectorAll('.layer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.layer;
+        if (key === currentLayerKey) return;
+        map.removeLayer(LAYERS[currentLayerKey]);
+        LAYERS[key].addTo(map);
+        currentLayerKey = key;
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // ── State ─────────────────────────────────────────────────
+    let WATER = null;
+    let waterLoaded = false;
+    let userTrack = [];        // [{lat, lon}]
+    let trackLine = null;
+    let markerLayer = L.layerGroup().addTo(map);
+
+    // ── Helpers ───────────────────────────────────────────────
+    function showLoading(msg) {
+      document.getElementById('loading-text').textContent = msg;
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    function fmtDist(v) {
+      return v >= 1000 ? (v / 1000).toFixed(1) + ' km' : v + ' m';
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function makeWaterIcon(dist, maxDist) {
+      const intensity = 1 - (dist / maxDist);
+      const size = Math.round(8 + intensity * 7);
+      return L.divIcon({
+        className: '',
+        html: `<div style="
+          width:${size}px;height:${size}px;
+          border-radius:50%;
+          background:rgba(88,166,255,0.85);
+          border:2px solid rgba(88,166,255,0.3);
+          box-shadow:0 0 ${Math.round(intensity * 12)}px rgba(88,166,255,0.6);
+        "></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2]
+      });
+    }
+
+    // ── Chargement Eau.gpx ────────────────────────────────────
+    async function loadWaterData() {
+      if (waterLoaded) return true;
+      showLoading('Chargement des points d\'eau France…');
+      try {
+        const resp = await fetch('./Eau.gpx');
+        if (!resp.ok) throw new Error('Fichier Eau.gpx introuvable');
+        let text = await resp.text();
+        text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, '&amp;');
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'application/xml');
+        const wpts = xml.querySelectorAll('wpt');
+        WATER = [];
+        wpts.forEach(w => {
+          const lat = parseFloat(w.getAttribute('lat'));
+          const lon = parseFloat(w.getAttribute('lon'));
+          if (isNaN(lat) || isNaN(lon)) return;
+          const op  = w.querySelector('operator')     ? w.querySelector('operator').textContent     : '';
+          const com = w.querySelector('meta_name_com') ? w.querySelector('meta_name_com').textContent : '';
+          const dep = w.querySelector('meta_name_dep') ? w.querySelector('meta_name_dep').textContent : '';
+          WATER.push({ lat, lon, operator: op, commune: com, departement: dep });
+        });
+        waterLoaded = true;
+        hideLoading();
+        return true;
+      } catch (e) {
+        hideLoading();
+        alert('Impossible de charger Eau.gpx : ' + e.message + '\n\nVérifiez que ce fichier est bien dans le même dossier.');
+        return false;
+      }
+    }
+
+    // ── Filtrage points d'eau près de la trace ────────────────
+    function renderWaterNearTrack(maxDist) {
+      markerLayer.clearLayers();
+      if (!WATER || userTrack.length === 0) return;
+
+      // Bbox de la trace
+      const lats = userTrack.map(p => p.lat);
+      const lons = userTrack.map(p => p.lon);
+      const margin = (maxDist / 111000) + 0.01;
+      const minLat = Math.min(...lats) - margin;
+      const maxLat = Math.max(...lats) + margin;
+      const minLon = Math.min(...lons) - margin;
+      const maxLon = Math.max(...lons) + margin;
+
+      // Track sous-échantillonné pour la passe grossière
+      const coarse = userTrack.filter((_, i) => i % 10 === 0);
+
+      const found = [];
+      for (const w of WATER) {
+        if (w.lat < minLat || w.lat > maxLat || w.lon < minLon || w.lon > maxLon) continue;
+
+        // Passe grossière
+        let minD = Infinity;
+        for (const t of coarse) {
+          const d = haversine(w.lat, w.lon, t.lat, t.lon);
+          if (d < minD) minD = d;
+          if (minD < maxDist) break;
+        }
+        if (minD > maxDist + 1000) continue;
+
+        // Passe précise
+        minD = Infinity;
+        for (const t of userTrack) {
+          const d = haversine(w.lat, w.lon, t.lat, t.lon);
+          if (d < minD) minD = d;
+          if (minD < 10) break;
+        }
+
+        if (minD <= maxDist) {
+          found.push({ ...w, _dist: Math.round(minD) });
+        }
+      }
+
+      document.getElementById('count-water').textContent = found.length.toLocaleString('fr-FR');
+
+      if (found.length > 0) {
+        document.getElementById('legend-water').style.display = 'flex';
+        document.getElementById('legend-water-label').textContent = `Points d'eau (≤ ${fmtDist(maxDist)})`;
+      } else {
+        document.getElementById('legend-water').style.display = 'none';
+      }
+
+      found.forEach(w => {
+        const gmapsUrl = `https://www.google.com/maps?q=${w.lat},${w.lon}&z=17`;
+        const commune = w.commune || 'Point d\'eau';
+        const op = w.operator ? `<div class="operator">${w.operator}</div>` : '';
+        const m = L.marker([w.lat, w.lon], { icon: makeWaterIcon(w._dist, maxDist) });
+        m.bindPopup(`
+          <div class="popup-inner">
+            <h3>💧 ${commune}</h3>
+            <div class="dept">${w.departement}</div>
+            <span class="dist-badge">à ${w._dist} m de la trace</span>
+            ${op}
+            <a class="gmaps-link" href="${gmapsUrl}" target="_blank" rel="noopener">📍 Ouvrir dans Google Maps</a>
+          </div>
+        `, { maxWidth: 240 });
+        markerLayer.addLayer(m);
+      });
+
+      hideLoading();
+    }
+
+    // ── Parsing GPX utilisateur ───────────────────────────────
+    function parseUserGPX(text) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'application/xml');
+      const pts = [];
+
+      // Essai trkpt (trace)
+      xml.querySelectorAll('trkpt').forEach(p => {
+        const lat = parseFloat(p.getAttribute('lat'));
+        const lon = parseFloat(p.getAttribute('lon'));
+        if (!isNaN(lat) && !isNaN(lon)) pts.push({ lat, lon });
+      });
+
+      // Fallback rtept (route)
+      if (pts.length === 0) {
+        xml.querySelectorAll('rtept').forEach(p => {
+          const lat = parseFloat(p.getAttribute('lat'));
+          const lon = parseFloat(p.getAttribute('lon'));
+          if (!isNaN(lat) && !isNaN(lon)) pts.push({ lat, lon });
+        });
+      }
+
+      // Fallback wpt (waypoints)
+      if (pts.length === 0) {
+        xml.querySelectorAll('wpt').forEach(p => {
+          const lat = parseFloat(p.getAttribute('lat'));
+          const lon = parseFloat(p.getAttribute('lon'));
+          if (!isNaN(lat) && !isNaN(lon)) pts.push({ lat, lon });
+        });
+      }
+
+      // Nom de la trace
+      const nameEl = xml.querySelector('trk > name, rte > name, metadata > name');
+      const name = nameEl ? nameEl.textContent.trim() : '';
+
+      return { pts, name };
+    }
+
+    // ── Chargement fichier utilisateur ────────────────────────
+    async function handleGPXFile(file) {
+      if (!file || !file.name.toLowerCase().endsWith('.gpx')) {
+        alert('Veuillez sélectionner un fichier .gpx');
+        return;
+      }
+
+      showLoading('Lecture de la trace…');
+
+      const text = await file.text();
+      const { pts, name } = parseUserGPX(text);
+
+      if (pts.length === 0) {
+        hideLoading();
+        alert('Aucun point GPS trouvé dans ce fichier GPX.');
+        return;
+      }
+
+      userTrack = pts;
+
+      // Afficher la trace
+      if (trackLine) map.removeLayer(trackLine);
+      markerLayer.clearLayers();
+
+      const coords = pts.map(p => [p.lat, p.lon]);
+      trackLine = L.polyline(coords, {
+        color: '#ff1a1a',
+        weight: 3,
+        opacity: 1,
+        smoothFactor: 1.5
+      }).addTo(map);
+
+      map.fitBounds(trackLine.getBounds(), { padding: [30, 30] });
+
+      // Mise à jour UI
+      document.getElementById('trace-name').textContent = name || file.name.replace('.gpx', '');
+      document.getElementById('count-pts').textContent = pts.length.toLocaleString('fr-FR');
+
+      // Passer en mode carte
+      document.getElementById('upload-zone').style.display = 'none';
+      document.getElementById('map').style.display = 'block';
+      document.getElementById('main-header').style.display = 'flex';
+      document.getElementById('legend').style.display = 'block';
+      document.getElementById('btn-reset').style.display = 'block';
+
+      // Charger les points d'eau puis filtrer
+      const ok = await loadWaterData();
+      if (ok) {
+        showLoading('Recherche des points d\'eau…');
+        // Léger délai pour laisser la carte se rendre
+        setTimeout(() => {
+          renderWaterNearTrack(parseInt(document.getElementById('dist-filter').value));
+        }, 100);
+      }
+    }
+
+    // ── Slider ────────────────────────────────────────────────
+    const slider   = document.getElementById('dist-filter');
+    const distVal  = document.getElementById('dist-val');
+
+    slider.addEventListener('input', () => {
+      const v = parseInt(slider.value);
+      distVal.textContent = fmtDist(v);
+      if (userTrack.length > 0) {
+        showLoading('Mise à jour…');
+        setTimeout(() => renderWaterNearTrack(v), 50);
+      }
+    });
+
+    // ── Input fichier ─────────────────────────────────────────
+    document.getElementById('file-input').addEventListener('change', e => {
+      if (e.target.files[0]) handleGPXFile(e.target.files[0]);
+    });
+
+    // ── Drag & drop ───────────────────────────────────────────
+    const dropArea = document.getElementById('drop-area');
+
+    dropArea.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropArea.classList.add('dragover');
+    });
+
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault();
+      dropArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleGPXFile(file);
+    });
+
+    // ── Bouton reset ──────────────────────────────────────────
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      userTrack = [];
+      if (trackLine) { map.removeLayer(trackLine); trackLine = null; }
+      markerLayer.clearLayers();
+      document.getElementById('upload-zone').style.display = 'flex';
+      document.getElementById('map').style.display = 'none';
+      document.getElementById('main-header').style.display = 'none';
+      document.getElementById('legend').style.display = 'none';
+      document.getElementById('btn-reset').style.display = 'none';
+      document.getElementById('count-water').textContent = '—';
+      document.getElementById('count-pts').textContent = '—';
+      document.getElementById('dist-val').textContent = '300 m';
+      slider.value = 300;
+      document.getElementById('file-input').value = '';
+    });
+  </script>
+</body>
+</html>
