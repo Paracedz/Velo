@@ -20,14 +20,13 @@
       --surface: #161b22;
       --surface2: #1c2333;
       --border: #30363d;
-      --blue: #2ea8e0;
       --blue-light: #79c0ff;
       --water: #58a6ff;
       --green: #56d364;
       --text: #e6edf3;
       --muted: #8b949e;
       --accent: #f0883e;
-      --track: #ff1a1a;
+      --track-col: #ff1a1a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,129 +51,95 @@
       flex-shrink: 0;
       gap: 12px;
       flex-wrap: wrap;
+      z-index: 10;
     }
 
-    .header-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
+    .header-title { display: flex; align-items: center; gap: 10px; }
     .header-title h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--text);
+      font-size: 1.05rem; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
     }
-
     .header-title .icon { font-size: 1.4rem; }
 
-    .stats {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .stat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
+    .stats { display: flex; gap: 16px; flex-wrap: wrap; }
+    .stat { display: flex; flex-direction: column; align-items: center; }
     .stat-value {
       font-family: 'Fira Mono', monospace;
-      font-size: 1.2rem;
-      font-weight: 500;
-      line-height: 1;
+      font-size: 1.2rem; font-weight: 500; line-height: 1;
     }
-
     .stat-label {
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-top: 2px;
+      font-size: 0.6rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin-top: 2px;
     }
+    .stat.blue .stat-value { color: var(--water); }
+    .stat.red  .stat-value { color: var(--track-col); }
 
-    .stat.blue .stat-value  { color: var(--water); }
-    .stat.red .stat-value   { color: var(--track); }
-
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
     .filter-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.78rem;
-      color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.78rem; color: var(--muted);
     }
-
     .filter-group label { font-weight: 600; color: var(--text); }
 
     input[type=range] {
       -webkit-appearance: none;
-      width: 100px;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--border);
-      outline: none;
+      width: 100px; height: 4px;
+      border-radius: 2px; background: var(--border); outline: none;
     }
-
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: var(--water);
-      cursor: pointer;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--water); cursor: pointer;
     }
 
     .range-val {
       font-family: 'Fira Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--water);
-      min-width: 50px;
+      font-size: 0.75rem; color: var(--water); min-width: 50px;
     }
 
     .btn {
       padding: 5px 12px;
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      background: var(--surface2);
-      color: var(--text);
+      border: 1px solid var(--border); border-radius: 5px;
+      background: var(--surface2); color: var(--text);
       font-family: 'Raleway', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
+      font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
     }
-
-    .btn:hover  { background: var(--border); }
-    .btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn:hover { background: var(--border); }
+    .btn.danger { border-color: #f85149; color: #f85149; }
+    .btn.danger:hover { background: #f85149; color: #000; }
 
     .layer-selector { display: flex; gap: 4px; flex-wrap: wrap; }
     .layer-btn { font-size: 0.7rem; padding: 4px 9px; }
     .layer-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
-    /* Upload zone */
-    #upload-zone {
+    /* Map container prend tout l'espace restant */
+    #map-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* La carte occupe tout le container — toujours dans le DOM */
+    #map {
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 900;
+      inset: 0;
+    }
+
+    /* Upload overlay par-dessus la carte */
+    #upload-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 500;
+      background: rgba(13, 17, 23, 0.94);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
-      background: var(--bg);
-      padding: 32px;
+      padding: 24px;
+      transition: opacity 0.3s;
     }
+    #upload-overlay.hidden { opacity: 0; pointer-events: none; }
 
     .upload-card {
       background: var(--surface);
@@ -185,166 +150,63 @@
       max-width: 340px;
       width: 100%;
       transition: border-color 0.2s, background 0.2s;
-      cursor: pointer;
     }
-
     .upload-card.dragover {
       border-color: var(--water);
       background: var(--surface2);
     }
-
     .upload-icon { font-size: 3rem; margin-bottom: 12px; }
-
     .upload-card h2 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: var(--text);
+      font-size: 1rem; font-weight: 700;
+      margin-bottom: 8px; color: var(--text);
     }
-
     .upload-card p {
-      font-size: 0.78rem;
-      color: var(--muted);
-      line-height: 1.5;
-      margin-bottom: 20px;
+      font-size: 0.78rem; color: var(--muted);
+      line-height: 1.5; margin-bottom: 20px;
     }
-
-    .upload-card .btn-upload {
+    .btn-upload {
       display: inline-block;
       padding: 8px 20px;
-      background: var(--water);
-      color: #000;
-      border: none;
-      border-radius: 6px;
+      background: var(--water); color: #000;
+      border: none; border-radius: 6px;
       font-family: 'Raleway', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.15s;
+      font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s;
     }
-
-    .upload-card .btn-upload:hover { opacity: 0.85; }
-
+    .btn-upload:hover { opacity: 0.85; }
     #file-input { display: none; }
 
-    /* Map */
-    #map { flex: 1; width: 100%; display: none; }
-
-    /* Legend */
+    /* Légende */
     .legend {
       position: absolute;
-      bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 8px);
-      left: 12px;
-      z-index: 1000;
+      bottom: 8px; left: 12px;
+      z-index: 400;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 10px 14px;
-      font-size: 0.72rem;
-      line-height: 1.8;
-      display: none;
+      font-size: 0.72rem; line-height: 1.8;
     }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-    }
-
+    .legend-item { display: flex; align-items: center; gap: 8px; color: var(--muted); }
     .legend-line {
-      width: 24px; height: 3px;
-      border-radius: 2px;
-      background: var(--track);
-      flex-shrink: 0;
+      width: 24px; height: 3px; border-radius: 2px;
+      background: var(--track-col); flex-shrink: 0;
     }
-
     .legend-dot {
-      width: 12px; height: 12px;
-      border-radius: 50%;
-      background: var(--water);
-      border: 2px solid rgba(88,166,255,0.4);
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--water); border: 2px solid rgba(88,166,255,0.4);
       flex-shrink: 0;
     }
 
-    /* Popups */
-    .leaflet-container { background: #0d1117; }
-
-    .leaflet-popup-content-wrapper {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-      font-family: 'Raleway', sans-serif;
-    }
-
-    .leaflet-popup-tip { background: var(--surface); }
-    .leaflet-popup-close-button { color: var(--muted) !important; }
-
-    .popup-inner { min-width: 160px; }
-
-    .popup-inner h3 {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--water);
-      margin-bottom: 4px;
-    }
-
-    .popup-inner .dept {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    .popup-inner .dist-badge {
-      display: inline-block;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-family: 'Fira Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--green);
-    }
-
-    .popup-inner .operator {
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: 4px;
-      font-style: italic;
-    }
-
-    .popup-inner .gmaps-link {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 4px 10px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--blue-light);
-      font-size: 0.72rem;
-      text-decoration: none;
-      font-weight: 600;
-      transition: background 0.15s;
-    }
-
-    .popup-inner .gmaps-link:hover { background: var(--border); color: #fff; }
-
-    /* Loading */
+    /* Spinner */
     #loading-overlay {
       position: absolute;
-      inset: 0;
-      z-index: 2000;
-      background: rgba(13,17,23,0.88);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
+      inset: 0; z-index: 600;
+      background: rgba(13, 17, 23, 0.82);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
       transition: opacity 0.3s;
     }
-
     #loading-overlay.hidden { opacity: 0; pointer-events: none; }
 
     .spinner {
@@ -354,24 +216,51 @@
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .loading-text {
-      font-size: 0.85rem;
-      color: var(--muted);
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-size: 0.85rem; color: var(--muted);
+      font-weight: 600; letter-spacing: 0.05em;
     }
 
-    /* Reset button */
-    #btn-reset {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      z-index: 1000;
-      display: none;
+    /* Popups Leaflet */
+    .leaflet-container { background: #0d1117; }
+    .leaflet-popup-content-wrapper {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      font-family: 'Raleway', sans-serif;
     }
+    .leaflet-popup-tip { background: var(--surface); }
+    .leaflet-popup-close-button { color: var(--muted) !important; }
+
+    .popup-inner { min-width: 165px; }
+    .popup-inner h3 {
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--water); margin-bottom: 4px;
+    }
+    .popup-inner .dept {
+      font-size: 0.75rem; color: var(--muted); margin-bottom: 6px;
+    }
+    .popup-inner .dist-badge {
+      display: inline-block;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px;
+      font-family: 'Fira Mono', monospace;
+      font-size: 0.72rem; color: var(--green);
+    }
+    .popup-inner .operator {
+      font-size: 0.72rem; color: var(--muted);
+      margin-top: 4px; font-style: italic;
+    }
+    .popup-inner .gmaps-link {
+      display: inline-block; margin-top: 8px;
+      padding: 4px 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--blue-light);
+      font-size: 0.72rem; text-decoration: none;
+      font-weight: 600; transition: background 0.15s;
+    }
+    .popup-inner .gmaps-link:hover { background: var(--border); color: #fff; }
 
     /* Nav */
     nav {
@@ -380,53 +269,39 @@
       border-top: 1px solid var(--border);
       flex-shrink: 0;
       padding-bottom: env(safe-area-inset-bottom, 0px);
+      z-index: 10;
     }
-
     .nav-btn {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 14px 4px;
-      gap: 5px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-family: 'Raleway', sans-serif;
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      cursor: pointer;
-      text-decoration: none;
-      transition: color 0.15s;
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 14px 4px; gap: 5px;
+      border: none; background: transparent; color: var(--muted);
+      font-family: 'Raleway', sans-serif; font-size: 0.72rem;
+      font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; cursor: pointer;
+      text-decoration: none; transition: color 0.15s;
       min-height: 72px;
     }
-
     .nav-btn .nav-icon { font-size: 1.7rem; }
     .nav-btn.active { color: var(--water); border-top: 3px solid var(--water); }
-    .nav-btn:hover { color: var(--text); }
+    .nav-btn:hover  { color: var(--text); }
 
     .version {
       position: absolute;
       bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 6px);
-      right: 10px;
-      z-index: 999;
+      right: 10px; z-index: 999;
       font-family: 'Fira Mono', monospace;
-      font-size: 0.6rem;
-      color: var(--border);
+      font-size: 0.6rem; color: var(--border);
       pointer-events: none;
     }
   </style>
 </head>
 <body>
 
-  <!-- Header (caché au début) -->
-  <header id="main-header" style="display:none">
+  <header>
     <div class="header-title">
       <span class="icon">📂</span>
-      <h1 id="trace-name">Ma Trace</h1>
+      <h1 id="trace-name">Ma Trace GPX</h1>
     </div>
     <div class="stats">
       <div class="stat blue">
@@ -444,6 +319,7 @@
         <input type="range" id="dist-filter" min="100" max="2000" step="50" value="300">
         <span class="range-val" id="dist-val">300 m</span>
       </div>
+      <button class="btn danger" id="btn-reset" style="display:none">🔄 Nouvelle trace</button>
       <div class="layer-selector">
         <button class="btn layer-btn" data-layer="osm">🗺️ OSM</button>
         <button class="btn layer-btn active" data-layer="topo">🏔️ OpenTopo</button>
@@ -452,51 +328,46 @@
     </div>
   </header>
 
-  <!-- Zone d'upload -->
-  <div id="upload-zone">
-    <div class="upload-card" id="drop-area">
-      <div class="upload-icon">📂</div>
-      <h2>Charger une trace GPX</h2>
-      <p>Déposez votre fichier <strong>.gpx</strong> ici, ou cliquez pour le sélectionner.<br>Les points d'eau à moins de 300 m seront affichés automatiquement.</p>
-      <label class="btn-upload" for="file-input">Choisir un fichier GPX</label>
-      <input type="file" id="file-input" accept=".gpx">
+  <div id="map-container">
+
+    <div id="map"></div>
+
+    <div id="upload-overlay">
+      <div class="upload-card" id="drop-area">
+        <div class="upload-icon">📂</div>
+        <h2>Charger une trace GPX</h2>
+        <p>Déposez votre fichier <strong>.gpx</strong> ici,<br>ou cliquez pour le sélectionner.<br><br>Les points d'eau à moins de 300 m seront affichés automatiquement.</p>
+        <label class="btn-upload" for="file-input">Choisir un fichier GPX</label>
+        <input type="file" id="file-input" accept=".gpx">
+      </div>
     </div>
-  </div>
 
-  <!-- Carte -->
-  <div id="map"></div>
+    <div id="loading-overlay" class="hidden">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loading-text">Chargement…</div>
+    </div>
 
-  <!-- Bouton changer de trace -->
-  <button class="btn" id="btn-reset">🔄 Nouvelle trace</button>
+    <div class="legend" id="legend" style="display:none">
+      <div class="legend-item"><div class="legend-line"></div>Trace GPX</div>
+      <div class="legend-item" id="legend-water" style="display:none">
+        <div class="legend-dot"></div>
+        <span id="legend-water-label">Points d'eau</span>
+      </div>
+    </div>
 
-  <!-- Légende -->
-  <div class="legend" id="legend">
-    <div class="legend-item"><div class="legend-line"></div>Trace GPX</div>
-    <div class="legend-item" id="legend-water" style="display:none"><div class="legend-dot"></div><span id="legend-water-label">Points d'eau (≤ 300 m)</span></div>
-  </div>
-
-  <!-- Loading -->
-  <div id="loading-overlay" class="hidden">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loading-text">Chargement…</div>
   </div>
 
   <div class="version">v2.0</div>
+
   <nav>
-    <a class="nav-btn" href="parcours_eau.html">
-      <span class="nav-icon">🗺️</span>Mon Parcours
-    </a>
-    <a class="nav-btn" href="points_eau.html">
-      <span class="nav-icon">💧</span>Points d'Eau
-    </a>
-    <a class="nav-btn active" href="ma_trace.html">
-      <span class="nav-icon">📂</span>Ma Trace
-    </a>
+    <a class="nav-btn" href="parcours_eau.html"><span class="nav-icon">🗺️</span>Mon Parcours</a>
+    <a class="nav-btn" href="points_eau.html"><span class="nav-icon">💧</span>Points d'Eau</a>
+    <a class="nav-btn active" href="ma_trace.html"><span class="nav-icon">📂</span>Ma Trace</a>
   </nav>
 
   <script>
-    // ── Map ───────────────────────────────────────────────────
-    const map = L.map('map', { preferCanvas: true, zoomControl: true });
+    // ── Carte ─────────────────────────────────────────────────
+    const map = L.map('map', { preferCanvas: true });
 
     const LAYERS = {
       'osm': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -504,11 +375,11 @@
         maxZoom: 19
       }),
       'topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | © <a href="https://opentopomap.org">OpenTopoMap</a>',
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | © <a href="https://opentopomap.org">OpenTopoMap</a>',
         subdomains: 'abc', maxZoom: 17
       }),
       'cyclosm': L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://www.cyclosm.org">CyclOSM</a>',
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="https://www.cyclosm.org">CyclOSM</a>',
         subdomains: 'abc', maxZoom: 20
       })
     };
@@ -532,31 +403,25 @@
     // ── State ─────────────────────────────────────────────────
     let WATER = null;
     let waterLoaded = false;
-    let userTrack = [];        // [{lat, lon}]
+    let userTrack = [];
     let trackLine = null;
-    let markerLayer = L.layerGroup().addTo(map);
+    const markerLayer = L.layerGroup().addTo(map);
 
     // ── Helpers ───────────────────────────────────────────────
-    function showLoading(msg) {
+    const showLoading = msg => {
       document.getElementById('loading-text').textContent = msg;
       document.getElementById('loading-overlay').classList.remove('hidden');
-    }
-
-    function hideLoading() {
-      document.getElementById('loading-overlay').classList.add('hidden');
-    }
-
-    function fmtDist(v) {
-      return v >= 1000 ? (v / 1000).toFixed(1) + ' km' : v + ' m';
-    }
+    };
+    const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
+    const fmtDist = v => v >= 1000 ? (v / 1000).toFixed(1) + ' km' : v + ' m';
 
     function haversine(lat1, lon1, lat2, lon2) {
       const R = 6371000;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-      return 2 * R * Math.asin(Math.sqrt(a));
+      const a = Math.sin(dLat/2)**2 +
+        Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+      return 2*R*Math.asin(Math.sqrt(a));
     }
 
     function makeWaterIcon(dist, maxDist) {
@@ -564,264 +429,202 @@
       const size = Math.round(8 + intensity * 7);
       return L.divIcon({
         className: '',
-        html: `<div style="
-          width:${size}px;height:${size}px;
-          border-radius:50%;
-          background:rgba(88,166,255,0.85);
-          border:2px solid rgba(88,166,255,0.3);
-          box-shadow:0 0 ${Math.round(intensity * 12)}px rgba(88,166,255,0.6);
-        "></div>`,
+        html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:rgba(88,166,255,0.85);border:2px solid rgba(88,166,255,0.3);box-shadow:0 0 ${Math.round(intensity*12)}px rgba(88,166,255,0.6);"></div>`,
         iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2]
+        iconAnchor: [size/2, size/2],
+        popupAnchor: [0, -size/2]
       });
     }
 
     // ── Chargement Eau.gpx ────────────────────────────────────
     async function loadWaterData() {
       if (waterLoaded) return true;
-      showLoading('Chargement des points d\'eau France…');
+      showLoading("Chargement des points d'eau France…");
       try {
         const resp = await fetch('./Eau.gpx');
-        if (!resp.ok) throw new Error('Fichier Eau.gpx introuvable');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
         let text = await resp.text();
         text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, '&amp;');
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'application/xml');
-        const wpts = xml.querySelectorAll('wpt');
+        const xml = new DOMParser().parseFromString(text, 'application/xml');
         WATER = [];
-        wpts.forEach(w => {
+        xml.querySelectorAll('wpt').forEach(w => {
           const lat = parseFloat(w.getAttribute('lat'));
           const lon = parseFloat(w.getAttribute('lon'));
           if (isNaN(lat) || isNaN(lon)) return;
-          const op  = w.querySelector('operator')     ? w.querySelector('operator').textContent     : '';
-          const com = w.querySelector('meta_name_com') ? w.querySelector('meta_name_com').textContent : '';
-          const dep = w.querySelector('meta_name_dep') ? w.querySelector('meta_name_dep').textContent : '';
-          WATER.push({ lat, lon, operator: op, commune: com, departement: dep });
+          WATER.push({
+            lat, lon,
+            operator:    w.querySelector('operator')?.textContent     || '',
+            commune:     w.querySelector('meta_name_com')?.textContent || '',
+            departement: w.querySelector('meta_name_dep')?.textContent || ''
+          });
         });
         waterLoaded = true;
-        hideLoading();
         return true;
-      } catch (e) {
+      } catch(e) {
         hideLoading();
-        alert('Impossible de charger Eau.gpx : ' + e.message + '\n\nVérifiez que ce fichier est bien dans le même dossier.');
+        alert('Impossible de charger Eau.gpx : ' + e.message +
+              '\n\nVérifiez que le fichier est dans le même dossier que cette page.');
         return false;
       }
     }
 
-    // ── Filtrage points d'eau près de la trace ────────────────
+    // ── Filtrage ──────────────────────────────────────────────
     function renderWaterNearTrack(maxDist) {
       markerLayer.clearLayers();
-      if (!WATER || userTrack.length === 0) return;
+      if (!WATER || !userTrack.length) { hideLoading(); return; }
 
-      // Bbox de la trace
-      const lats = userTrack.map(p => p.lat);
-      const lons = userTrack.map(p => p.lon);
-      const margin = (maxDist / 111000) + 0.01;
-      const minLat = Math.min(...lats) - margin;
-      const maxLat = Math.max(...lats) + margin;
-      const minLon = Math.min(...lons) - margin;
-      const maxLon = Math.max(...lons) + margin;
-
-      // Track sous-échantillonné pour la passe grossière
-      const coarse = userTrack.filter((_, i) => i % 10 === 0);
+      const lats   = userTrack.map(p => p.lat);
+      const lons   = userTrack.map(p => p.lon);
+      const margin = maxDist / 90000 + 0.015;
+      const minLat = Math.min(...lats) - margin, maxLat = Math.max(...lats) + margin;
+      const minLon = Math.min(...lons) - margin, maxLon = Math.max(...lons) + margin;
+      const coarse = userTrack.filter((_, i) => i % 15 === 0);
 
       const found = [];
       for (const w of WATER) {
         if (w.lat < minLat || w.lat > maxLat || w.lon < minLon || w.lon > maxLon) continue;
-
-        // Passe grossière
         let minD = Infinity;
         for (const t of coarse) {
           const d = haversine(w.lat, w.lon, t.lat, t.lon);
           if (d < minD) minD = d;
           if (minD < maxDist) break;
         }
-        if (minD > maxDist + 1000) continue;
-
-        // Passe précise
+        if (minD > maxDist + 800) continue;
         minD = Infinity;
         for (const t of userTrack) {
           const d = haversine(w.lat, w.lon, t.lat, t.lon);
           if (d < minD) minD = d;
-          if (minD < 10) break;
+          if (minD < 5) break;
         }
-
-        if (minD <= maxDist) {
-          found.push({ ...w, _dist: Math.round(minD) });
-        }
+        if (minD <= maxDist) found.push({ ...w, _dist: Math.round(minD) });
       }
 
       document.getElementById('count-water').textContent = found.length.toLocaleString('fr-FR');
 
-      if (found.length > 0) {
-        document.getElementById('legend-water').style.display = 'flex';
-        document.getElementById('legend-water-label').textContent = `Points d'eau (≤ ${fmtDist(maxDist)})`;
-      } else {
-        document.getElementById('legend-water').style.display = 'none';
+      const legendWater = document.getElementById('legend-water');
+      legendWater.style.display = found.length ? 'flex' : 'none';
+      if (found.length) {
+        document.getElementById('legend-water-label').textContent =
+          "Points d'eau (\u2264 " + fmtDist(maxDist) + ')';
       }
 
       found.forEach(w => {
-        const gmapsUrl = `https://www.google.com/maps?q=${w.lat},${w.lon}&z=17`;
-        const commune = w.commune || 'Point d\'eau';
-        const op = w.operator ? `<div class="operator">${w.operator}</div>` : '';
-        const m = L.marker([w.lat, w.lon], { icon: makeWaterIcon(w._dist, maxDist) });
-        m.bindPopup(`
-          <div class="popup-inner">
-            <h3>💧 ${commune}</h3>
-            <div class="dept">${w.departement}</div>
-            <span class="dist-badge">à ${w._dist} m de la trace</span>
-            ${op}
-            <a class="gmaps-link" href="${gmapsUrl}" target="_blank" rel="noopener">📍 Ouvrir dans Google Maps</a>
-          </div>
-        `, { maxWidth: 240 });
-        markerLayer.addLayer(m);
+        const gmapsUrl = 'https://www.google.com/maps?q=' + w.lat + ',' + w.lon + '&z=17';
+        const commune  = w.commune || "Point d'eau";
+        const op       = w.operator ? '<div class="operator">' + w.operator + '</div>' : '';
+        L.marker([w.lat, w.lon], { icon: makeWaterIcon(w._dist, maxDist) })
+          .bindPopup(
+            '<div class="popup-inner">' +
+              '<h3>&#128167; ' + commune + '</h3>' +
+              '<div class="dept">' + w.departement + '</div>' +
+              '<span class="dist-badge">\u00e0 ' + w._dist + ' m de la trace</span>' +
+              op +
+              '<a class="gmaps-link" href="' + gmapsUrl + '" target="_blank" rel="noopener">' +
+                '&#128205; Ouvrir dans Google Maps' +
+              '</a>' +
+            '</div>',
+            { maxWidth: 240 }
+          )
+          .addTo(markerLayer);
       });
 
       hideLoading();
     }
 
-    // ── Parsing GPX utilisateur ───────────────────────────────
+    // ── Parse GPX utilisateur ─────────────────────────────────
     function parseUserGPX(text) {
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(text, 'application/xml');
-      const pts = [];
-
-      // Essai trkpt (trace)
-      xml.querySelectorAll('trkpt').forEach(p => {
+      const xml = new DOMParser().parseFromString(text, 'application/xml');
+      let pts = [];
+      const pick = sel => xml.querySelectorAll(sel).forEach(p => {
         const lat = parseFloat(p.getAttribute('lat'));
         const lon = parseFloat(p.getAttribute('lon'));
         if (!isNaN(lat) && !isNaN(lon)) pts.push({ lat, lon });
       });
-
-      // Fallback rtept (route)
-      if (pts.length === 0) {
-        xml.querySelectorAll('rtept').forEach(p => {
-          const lat = parseFloat(p.getAttribute('lat'));
-          const lon = parseFloat(p.getAttribute('lon'));
-          if (!isNaN(lat) && !isNaN(lon)) pts.push({ lat, lon });
-        });
-      }
-
-      // Fallback wpt (waypoints)
-      if (pts.length === 0) {
-        xml.querySelectorAll('wpt').forEach(p => {
-          const lat = parseFloat(p.getAttribute('lat'));
-          const lon = parseFloat(p.getAttribute('lon'));
-          if (!isNaN(lat) && !isNaN(lon)) pts.push({ lat, lon });
-        });
-      }
-
-      // Nom de la trace
+      pick('trkpt');
+      if (!pts.length) pick('rtept');
+      if (!pts.length) pick('wpt');
       const nameEl = xml.querySelector('trk > name, rte > name, metadata > name');
-      const name = nameEl ? nameEl.textContent.trim() : '';
-
-      return { pts, name };
+      return { pts, name: nameEl?.textContent.trim() || '' };
     }
 
-    // ── Chargement fichier utilisateur ────────────────────────
+    // ── Chargement fichier ────────────────────────────────────
     async function handleGPXFile(file) {
-      if (!file || !file.name.toLowerCase().endsWith('.gpx')) {
-        alert('Veuillez sélectionner un fichier .gpx');
-        return;
+      if (!file?.name.toLowerCase().endsWith('.gpx')) {
+        alert('Veuillez sélectionner un fichier .gpx'); return;
       }
-
       showLoading('Lecture de la trace…');
-
-      const text = await file.text();
-      const { pts, name } = parseUserGPX(text);
-
-      if (pts.length === 0) {
+      const { pts, name } = parseUserGPX(await file.text());
+      if (!pts.length) {
         hideLoading();
-        alert('Aucun point GPS trouvé dans ce fichier GPX.');
-        return;
+        alert('Aucun point GPS trouvé dans ce fichier GPX.'); return;
       }
 
       userTrack = pts;
-
-      // Afficher la trace
       if (trackLine) map.removeLayer(trackLine);
       markerLayer.clearLayers();
 
-      const coords = pts.map(p => [p.lat, p.lon]);
-      trackLine = L.polyline(coords, {
-        color: '#ff1a1a',
-        weight: 3,
-        opacity: 1,
-        smoothFactor: 1.5
+      trackLine = L.polyline(pts.map(p => [p.lat, p.lon]), {
+        color: '#ff1a1a', weight: 3, opacity: 1, smoothFactor: 1.5
       }).addTo(map);
 
-      map.fitBounds(trackLine.getBounds(), { padding: [30, 30] });
+      // Masquer l'overlay upload d'abord
+      document.getElementById('upload-overlay').classList.add('hidden');
 
-      // Mise à jour UI
-      document.getElementById('trace-name').textContent = name || file.name.replace('.gpx', '');
-      document.getElementById('count-pts').textContent = pts.length.toLocaleString('fr-FR');
+      // Laisser le navigateur rendre la carte, puis ajuster la vue
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+        map.fitBounds(trackLine.getBounds(), { padding: [30, 30] });
+      });
 
-      // Passer en mode carte
-      document.getElementById('upload-zone').style.display = 'none';
-      document.getElementById('map').style.display = 'block';
-      document.getElementById('main-header').style.display = 'flex';
-      document.getElementById('legend').style.display = 'block';
-      document.getElementById('btn-reset').style.display = 'block';
+      document.getElementById('trace-name').textContent = name || file.name.replace(/\.gpx$/i, '');
+      document.getElementById('count-pts').textContent   = pts.length.toLocaleString('fr-FR');
+      document.getElementById('legend').style.display    = 'block';
+      document.getElementById('btn-reset').style.display = 'inline-block';
 
-      // Charger les points d'eau puis filtrer
       const ok = await loadWaterData();
       if (ok) {
-        showLoading('Recherche des points d\'eau…');
-        // Léger délai pour laisser la carte se rendre
-        setTimeout(() => {
-          renderWaterNearTrack(parseInt(document.getElementById('dist-filter').value));
-        }, 100);
+        showLoading("Recherche des points d'eau…");
+        setTimeout(() => renderWaterNearTrack(parseInt(slider.value)), 100);
       }
     }
 
     // ── Slider ────────────────────────────────────────────────
-    const slider   = document.getElementById('dist-filter');
-    const distVal  = document.getElementById('dist-val');
-
+    const slider  = document.getElementById('dist-filter');
+    const distVal = document.getElementById('dist-val');
     slider.addEventListener('input', () => {
       const v = parseInt(slider.value);
       distVal.textContent = fmtDist(v);
-      if (userTrack.length > 0) {
+      if (userTrack.length) {
         showLoading('Mise à jour…');
         setTimeout(() => renderWaterNearTrack(v), 50);
       }
     });
 
-    // ── Input fichier ─────────────────────────────────────────
+    // ── Drag & drop ───────────────────────────────────────────
+    const dropArea = document.getElementById('drop-area');
+    dropArea.addEventListener('dragover',  e => { e.preventDefault(); dropArea.classList.add('dragover'); });
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault(); dropArea.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) handleGPXFile(e.dataTransfer.files[0]);
+    });
     document.getElementById('file-input').addEventListener('change', e => {
       if (e.target.files[0]) handleGPXFile(e.target.files[0]);
     });
 
-    // ── Drag & drop ───────────────────────────────────────────
-    const dropArea = document.getElementById('drop-area');
-
-    dropArea.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropArea.classList.add('dragover');
-    });
-
-    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-
-    dropArea.addEventListener('drop', e => {
-      e.preventDefault();
-      dropArea.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) handleGPXFile(file);
-    });
-
-    // ── Bouton reset ──────────────────────────────────────────
+    // ── Reset ─────────────────────────────────────────────────
     document.getElementById('btn-reset').addEventListener('click', () => {
       userTrack = [];
       if (trackLine) { map.removeLayer(trackLine); trackLine = null; }
       markerLayer.clearLayers();
-      document.getElementById('upload-zone').style.display = 'flex';
-      document.getElementById('map').style.display = 'none';
-      document.getElementById('main-header').style.display = 'none';
-      document.getElementById('legend').style.display = 'none';
+      map.setView([46.5, 2.5], 6);
+      document.getElementById('upload-overlay').classList.remove('hidden');
+      document.getElementById('legend').style.display    = 'none';
       document.getElementById('btn-reset').style.display = 'none';
       document.getElementById('count-water').textContent = '—';
-      document.getElementById('count-pts').textContent = '—';
-      document.getElementById('dist-val').textContent = '300 m';
+      document.getElementById('count-pts').textContent   = '—';
+      document.getElementById('trace-name').textContent  = 'Ma Trace GPX';
+      distVal.textContent = '300 m';
       slider.value = 300;
       document.getElementById('file-input').value = '';
     });
