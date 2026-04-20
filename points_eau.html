@@ -389,12 +389,16 @@
   <header>
     <div class="header-title">
       <span class="icon">💧</span>
-      <h1>Points d'Eau à Proximité</h1>
+      <h1>Points d'Eau &amp; Toilettes</h1>
     </div>
     <div class="stats">
       <div class="stat blue">
         <span class="stat-value" id="count-water">—</span>
         <span class="stat-label">Points d'eau</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="count-toilets" style="color:#f0883e">—</span>
+        <span class="stat-label">Toilettes</span>
       </div>
     </div>
     <div class="controls">
@@ -415,13 +419,14 @@
   <div id="map">
     <div id="hint">
       <div class="hint-icon">📍</div>
-      <p>Appuyez sur <strong>Ma position</strong> pour afficher les points d'eau autour de vous.</p>
+      <p>Appuyez sur <strong>Ma position</strong> pour afficher les points d'eau et les toilettes autour de vous.</p>
     </div>
   </div>
 
   <div class="legend">
     <div class="legend-item" id="legend-me" style="display:none"><div class="legend-dot-me"></div>Ma position</div>
     <div class="legend-item" id="legend-water" style="display:none"><div class="legend-dot"></div>Point d'eau</div>
+    <div class="legend-item" id="legend-toilet" style="display:none"><div style="width:12px;height:12px;border-radius:50%;background:rgba(240,100,80,0.85);border:2px solid rgba(240,100,80,0.3);flex-shrink:0"></div>Toilettes</div>
   </div>
 
   <div id="loading-overlay" class="hidden">
@@ -554,7 +559,80 @@
     let meAccCircle = null;
     let meRadiusCircle = null;
     let markerLayer = L.layerGroup().addTo(map);
+    let toiletLayer = L.layerGroup().addTo(map);
     let myLat = null, myLon = null;
+
+    // ── Données toilettes ─────────────────────────────────────
+    let TOILETS = null;
+    let toiletsLoaded = false;
+
+    async function loadToiletData() {
+      if (toiletsLoaded) return true;
+      showLoading('Chargement des toilettes…');
+      try {
+        const resp = await fetch('./toilets_all.gpx');
+        if (!resp.ok) throw new Error('toilets_all.gpx introuvable');
+        let text = await resp.text();
+        text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, '&amp;');
+        const xml = new DOMParser().parseFromString(text, 'application/xml');
+        TOILETS = [];
+        xml.querySelectorAll('wpt').forEach(w => {
+          const lat = parseFloat(w.getAttribute('lat'));
+          const lon = parseFloat(w.getAttribute('lon'));
+          if (isNaN(lat) || isNaN(lon)) return;
+          const name = w.querySelector('name')?.textContent || '';
+          TOILETS.push({ lat, lon, name });
+        });
+        xml.querySelectorAll('trkpt').forEach(w => {
+          const lat = parseFloat(w.getAttribute('lat'));
+          const lon = parseFloat(w.getAttribute('lon'));
+          if (!isNaN(lat) && !isNaN(lon)) TOILETS.push({ lat, lon, name: '' });
+        });
+        toiletsLoaded = true;
+        return true;
+      } catch(e) {
+        hideLoading();
+        alert('Impossible de charger toilets_all.gpx : ' + e.message);
+        return false;
+      }
+    }
+
+    function makeToiletIcon(dist, maxDist) {
+      const intensity = 1 - (dist / maxDist);
+      const size = Math.round(7 + intensity * 6);
+      return L.divIcon({
+        className: '',
+        html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:rgba(240,100,80,0.85);border:2px solid rgba(240,100,80,0.3);box-shadow:0 0 ${Math.round(intensity*8)}px rgba(240,100,80,0.6);"></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2],
+        popupAnchor: [0, -size/2]
+      });
+    }
+
+    function renderToiletsAround(lat, lon, maxDist) {
+      toiletLayer.clearLayers();
+      if (!TOILETS) return;
+      const margin = (maxDist / 111000) + 0.005;
+      const found = [];
+      TOILETS.forEach(t => {
+        if (Math.abs(t.lat - lat) > margin || Math.abs(t.lon - lon) > margin) return;
+        const d = haversine(lat, lon, t.lat, t.lon);
+        if (d <= maxDist) found.push({ ...t, _dist: Math.round(d) });
+      });
+      document.getElementById('count-toilets').textContent = found.length.toLocaleString('fr-FR');
+      document.getElementById('legend-toilet').style.display = found.length ? 'flex' : 'none';
+      found.forEach(t => {
+        const gmapsUrl = `https://www.google.com/maps?q=${t.lat},${t.lon}&z=17`;
+        const label = t.name || 'Toilettes publiques';
+        L.marker([t.lat, t.lon], { icon: makeToiletIcon(t._dist, maxDist) })
+          .bindPopup(`<div class="popup-inner">
+            <h3 style="color:#f06450">🚻 ${label}</h3>
+            <span class="dist-badge">à ${t._dist} m</span>
+            <a class="gmaps-link" href="${gmapsUrl}" target="_blank" rel="noopener">📍 Ouvrir dans Google Maps</a>
+          </div>`, { maxWidth: 240 })
+          .addTo(toiletLayer);
+      });
+    }
 
     const meIcon = L.divIcon({
       className: '',
@@ -622,7 +700,7 @@
     slider.addEventListener('input', () => {
       const v = parseInt(slider.value);
       distVal.textContent = v >= 1000 ? (v/1000).toFixed(1) + ' km' : v + ' m';
-      if (myLat !== null) renderWaterAround(myLat, myLon, v);
+      if (myLat !== null) { renderWaterAround(myLat, myLon, v); renderToiletsAround(myLat, myLon, v); }
     });
 
     // Bouton Ma position
@@ -637,8 +715,9 @@
       btn.disabled = true;
 
       // Charger les données si pas encore fait
-      const ok = await loadWaterData();
-      if (!ok) { btn.textContent = '📍 Ma position'; btn.disabled = false; return; }
+      const okWater = await loadWaterData();
+      const okToilet = await loadToiletData();
+      if (!okWater) { btn.textContent = '📍 Ma position'; btn.disabled = false; return; }
 
       showLoading('Acquisition GPS…');
 
@@ -682,6 +761,7 @@
           const maxDist = parseInt(slider.value);
           map.setView([myLat, myLon], 14);
           renderWaterAround(myLat, myLon, maxDist);
+          renderToiletsAround(myLat, myLon, maxDist);
 
           btn.textContent = '📍 Ma position';
           btn.disabled = false;

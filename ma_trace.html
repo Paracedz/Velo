@@ -312,6 +312,10 @@
         <span class="stat-value" id="count-pts">—</span>
         <span class="stat-label">Points GPS</span>
       </div>
+      <div class="stat">
+        <span class="stat-value" id="count-toilets" style="color:#f0883e">—</span>
+        <span class="stat-label">Toilettes</span>
+      </div>
     </div>
     <div class="controls">
       <div class="filter-group">
@@ -352,6 +356,10 @@
       <div class="legend-item" id="legend-water" style="display:none">
         <div class="legend-dot"></div>
         <span id="legend-water-label">Points d'eau</span>
+      </div>
+      <div class="legend-item" id="legend-toilet" style="display:none">
+        <div style="width:12px;height:12px;border-radius:50%;background:rgba(240,100,80,0.85);border:2px solid rgba(240,100,80,0.3);flex-shrink:0"></div>
+        <span id="legend-toilet-label">Toilettes</span>
       </div>
     </div>
 
@@ -406,6 +414,104 @@
     let userTrack = [];
     let trackLine = null;
     const markerLayer = L.layerGroup().addTo(map);
+    const toiletLayer = L.layerGroup().addTo(map);
+
+    // ── Données toilettes ─────────────────────────────────────
+    let TOILETS = null;
+    let toiletsLoaded = false;
+
+    async function loadToiletData() {
+      if (toiletsLoaded) return true;
+      showLoading('Chargement des toilettes…');
+      try {
+        const resp = await fetch('./toilets_all.gpx');
+        if (!resp.ok) throw new Error('toilets_all.gpx introuvable (HTTP ' + resp.status + ')');
+        let text = await resp.text();
+        text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, '&amp;');
+        const xml = new DOMParser().parseFromString(text, 'application/xml');
+        TOILETS = [];
+        xml.querySelectorAll('wpt').forEach(w => {
+          const lat = parseFloat(w.getAttribute('lat'));
+          const lon = parseFloat(w.getAttribute('lon'));
+          if (isNaN(lat) || isNaN(lon)) return;
+          TOILETS.push({ lat, lon, name: w.querySelector('name')?.textContent || '' });
+        });
+        xml.querySelectorAll('trkpt').forEach(w => {
+          const lat = parseFloat(w.getAttribute('lat'));
+          const lon = parseFloat(w.getAttribute('lon'));
+          if (!isNaN(lat) && !isNaN(lon)) TOILETS.push({ lat, lon, name: '' });
+        });
+        toiletsLoaded = true;
+        return true;
+      } catch(e) {
+        hideLoading();
+        alert('Impossible de charger toilets_all.gpx : ' + e.message);
+        return false;
+      }
+    }
+
+    function makeToiletIcon(dist, maxDist) {
+      const intensity = 1 - (dist / maxDist);
+      const size = Math.round(7 + intensity * 6);
+      return L.divIcon({
+        className: '',
+        html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:rgba(240,100,80,0.85);border:2px solid rgba(240,100,80,0.3);box-shadow:0 0 ${Math.round(intensity*8)}px rgba(240,100,80,0.6);"></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2],
+        popupAnchor: [0, -size/2]
+      });
+    }
+
+    function renderToiletsNearTrack(maxDist) {
+      toiletLayer.clearLayers();
+      if (!TOILETS || !userTrack.length) return;
+      const lats = userTrack.map(p => p.lat);
+      const lons = userTrack.map(p => p.lon);
+      const margin = maxDist / 90000 + 0.015;
+      const minLat = Math.min(...lats)-margin, maxLat = Math.max(...lats)+margin;
+      const minLon = Math.min(...lons)-margin, maxLon = Math.max(...lons)+margin;
+      const coarse = userTrack.filter((_, i) => i % 15 === 0);
+      const found = [];
+      for (const t of TOILETS) {
+        if (t.lat < minLat || t.lat > maxLat || t.lon < minLon || t.lon > maxLon) continue;
+        let minD = Infinity;
+        for (const pt of coarse) {
+          const d = haversine(t.lat, t.lon, pt.lat, pt.lon);
+          if (d < minD) minD = d;
+          if (minD < maxDist) break;
+        }
+        if (minD > maxDist + 800) continue;
+        minD = Infinity;
+        for (const pt of userTrack) {
+          const d = haversine(t.lat, t.lon, pt.lat, pt.lon);
+          if (d < minD) minD = d;
+          if (minD < 5) break;
+        }
+        if (minD <= maxDist) found.push({ ...t, _dist: Math.round(minD) });
+      }
+      document.getElementById('count-toilets').textContent = found.length.toLocaleString('fr-FR');
+      const legendT = document.getElementById('legend-toilet');
+      if (found.length) {
+        legendT.style.display = 'flex';
+        document.getElementById('legend-toilet-label').textContent = 'Toilettes (≤ ' + fmtDist(maxDist) + ')';
+      } else {
+        legendT.style.display = 'none';
+      }
+      found.forEach(t => {
+        const gmapsUrl = 'https://www.google.com/maps?q=' + t.lat + ',' + t.lon + '&z=17';
+        const label = t.name || 'Toilettes publiques';
+        L.marker([t.lat, t.lon], { icon: makeToiletIcon(t._dist, maxDist) })
+          .bindPopup(
+            '<div class="popup-inner">' +
+            '<h3 style="color:#f06450">&#128699; ' + label + '</h3>' +
+            '<span class="dist-badge">à ' + t._dist + ' m de la trace</span>' +
+            '<a class="gmaps-link" href="' + gmapsUrl + '" target="_blank" rel="noopener">&#128205; Ouvrir dans Google Maps</a>' +
+            '</div>',
+            { maxWidth: 240 }
+          )
+          .addTo(toiletLayer);
+      });
+    }
 
     // ── Helpers ───────────────────────────────────────────────
     const showLoading = msg => {
@@ -471,6 +577,7 @@
     // ── Filtrage ──────────────────────────────────────────────
     function renderWaterNearTrack(maxDist) {
       markerLayer.clearLayers();
+      toiletLayer.clearLayers();
       if (!WATER || !userTrack.length) { hideLoading(); return; }
 
       const lats   = userTrack.map(p => p.lat);
@@ -562,6 +669,7 @@
       userTrack = pts;
       if (trackLine) map.removeLayer(trackLine);
       markerLayer.clearLayers();
+      toiletLayer.clearLayers();
 
       trackLine = L.polyline(pts.map(p => [p.lat, p.lon]), {
         color: '#ff1a1a', weight: 3, opacity: 1, smoothFactor: 1.5
@@ -581,10 +689,14 @@
       document.getElementById('legend').style.display    = 'block';
       document.getElementById('btn-reset').style.display = 'inline-block';
 
-      const ok = await loadWaterData();
-      if (ok) {
-        showLoading("Recherche des points d'eau…");
-        setTimeout(() => renderWaterNearTrack(parseInt(slider.value)), 100);
+      const okWater = await loadWaterData();
+      const okToilet = await loadToiletData();
+      if (okWater) {
+        showLoading("Recherche des points d'eau et toilettes…");
+        setTimeout(() => {
+          renderWaterNearTrack(parseInt(slider.value));
+          renderToiletsNearTrack(parseInt(slider.value));
+        }, 100);
       }
     }
 
@@ -596,7 +708,7 @@
       distVal.textContent = fmtDist(v);
       if (userTrack.length) {
         showLoading('Mise à jour…');
-        setTimeout(() => renderWaterNearTrack(v), 50);
+        setTimeout(() => { renderWaterNearTrack(v); renderToiletsNearTrack(v); }, 50);
       }
     });
 
@@ -617,12 +729,14 @@
       userTrack = [];
       if (trackLine) { map.removeLayer(trackLine); trackLine = null; }
       markerLayer.clearLayers();
+      toiletLayer.clearLayers();
       map.setView([46.5, 2.5], 6);
       document.getElementById('upload-overlay').classList.remove('hidden');
       document.getElementById('legend').style.display    = 'none';
       document.getElementById('btn-reset').style.display = 'none';
       document.getElementById('count-water').textContent = '—';
       document.getElementById('count-pts').textContent   = '—';
+      document.getElementById('count-toilets').textContent = '—';
       document.getElementById('trace-name').textContent  = 'Ma Trace GPX';
       distVal.textContent = '300 m';
       slider.value = 300;
