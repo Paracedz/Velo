@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide TV Sport - Chaînes Gratuites</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .status {
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.loading {
+            color: #667eea;
+        }
+
+        .status.error {
+            color: #e74c3c;
+            background: #fadbd8;
+            border: 1px solid #e74c3c;
+        }
+
+        .status.success {
+            color: #27ae60;
+            background: #d5f4e6;
+            border: 1px solid #27ae60;
+        }
+
+        .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .days-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .day-tab {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .day-tab:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .day-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .programs {
+            display: grid;
+            gap: 20px;
+        }
+
+        .program-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 5px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .program-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .program-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+            gap: 15px;
+        }
+
+        .program-time {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: 700;
+            color: #667eea;
+            white-space: nowrap;
+            font-size: 0.95em;
+        }
+
+        .program-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+            flex: 1;
+        }
+
+        .program-channel {
+            display: inline-block;
+            background: #f8f9fa;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .program-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .detail-item {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .detail-item strong {
+            color: #333;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .channel-badge {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .filters-badge {
+            background: white;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: white;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group {
+                flex-direction: column;
+            }
+
+            .control-group label {
+                white-space: normal;
+            }
+
+            .program-header {
+                flex-direction: column;
+            }
+
+            .program-time {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-tv"></i> Guide TV Sport</h1>
+            <p>Programmes de sport sur les chaînes gratuites (TNT)</p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group" style="flex: 1; min-width: 250px;">
+                <label for="xmltvUrl">URL XMLTV :</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="xmltvUrl" placeholder="https://..." style="flex: 1;" value="https://xmltvfr.fr/xmltv/xmltv.xml">
+                    <button onclick="loadFromURL()" style="white-space: nowrap;">
+                        <i class="fas fa-download"></i> Charger URL
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="fileInput">Ou fichier local :</label>
+                <input type="file" id="fileInput" accept=".xml,.gz" style="max-width: 300px;">
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div id="sportsFilter" style="display: none; background: white; border-radius: 10px; padding: 20px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 15px; color: #333;">Sélectionner les sports à afficher :</h3>
+            <div id="sportsCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;"></div>
+        </div>
+
+        <div class="days-tabs" id="daysTabs"></div>
+
+        <div id="programs" class="programs"></div>
+
+        <footer>
+            <p>Les données proviennent de sources XMLTV publiques. Mise à jour automatique possible.</p>
+        </footer>
+    </div>
+
+    <script>
+        const freeChannels = {
+            'TF1': ['tf1.fr', 'tf1', 'TF1'],
+            'France 2': ['france2.fr', 'france2', 'FR2'],
+            'France 3': ['france3.fr', 'france3', 'FR3'],
+            'France 4': ['france4.fr', 'france4'],
+            'France 5': ['france5.fr', 'france5', 'FR5'],
+            'M6': ['m6.fr', 'm6', 'M6'],
+            'L\'Équipe': ['lequipe.fr', 'lequipe'],
+        };
+
+        const sportKeywords = [
+            'football', 'foot', 'rugby', 'tennis', 'basket', 'basketbal', 'cyclisme', 'cycliste',
+            'formule 1', 'f1', 'moto', 'motogp', 'nfl', 'nba', 'ligue 1', 'ligue2', 'champions',
+            'coupe', 'match', 'finale', 'semi-final', 'qualification', 'tournoi', 'championnat',
+            'sport', 'live sport', 'athlete', 'golf', 'handball', 'volley', 'badminton',
+            'sports', 'athletics', 'athlétisme', 'natation', 'snow', 'ski', 'ski alpin'
+        ];
+
+        let allPrograms = [];
+        let selectedDay = null;
+        let availableSports = new Set();
+        let selectedSports = new Set();
+
+        function showStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status show ${type}`;
+            statusEl.innerHTML = message;
+        }
+
+        function hideStatus() {
+            document.getElementById('status').classList.remove('show');
+        }
+
+        async function loadFromURL() {
+            const url = document.getElementById('xmltvUrl').value.trim();
+            
+            if (!url) {
+                showStatus('Veuillez entrer une URL valide', 'error');
+                return;
+            }
+
+            showStatus('<i class="fas fa-spinner spinner"></i> Chargement de l\'URL XMLTV...');
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
+                
+                const data = await response.arrayBuffer();
+                
+                // Vérifier si le fichier est gzippé
+                const view = new Uint8Array(data);
+                const isGzip = view[0] === 0x1f && view[1] === 0x8b;
+                
+                let xmlText;
+                if (isGzip) {
+                    showStatus('<i class="fas fa-spinner spinner"></i> Décompression en cours...');
+                    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js');
+                    const decompressed = pako.ungzip(data);
+                    xmlText = new TextDecoder().decode(decompressed);
+                } else {
+                    xmlText = new TextDecoder().decode(data);
+                }
+                
+                parseXMLContent(xmlText);
+            } catch (error) {
+                showStatus(`Erreur : ${error.message}`, 'error');
+            }
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            showStatus('<i class="fas fa-spinner spinner"></i> Chargement du fichier...');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    let xmlText = event.target.result;
+
+                    // Si gzippé, décompresser
+                    if (file.name.endsWith('.gz')) {
+                        showStatus('<i class="fas fa-spinner spinner"></i> Décompression en cours...');
+                        loadScript('https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js').then(() => {
+                            const decompressed = pako.ungzip(event.target.result, { to: 'string' });
+                            parseXMLContent(decompressed);
+                        });
+                    } else {
+                        parseXMLContent(xmlText);
+                    }
+                } catch (error) {
+                    showStatus(`Erreur : ${error.message}`, 'error');
+                }
+            };
+
+            if (file.name.endsWith('.gz')) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        });
+
+        function parseXMLContent(xmlText) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    throw new Error('Erreur de parsing du XML');
+                }
+
+                // Extraire les informations des chaînes du XML
+                const channels = {};
+                const channelElements = xmlDoc.getElementsByTagName('channel');
+                
+                for (let channelEl of channelElements) {
+                    const channelId = channelEl.getAttribute('id');
+                    const displayNameEl = channelEl.querySelector('display-name');
+                    const displayName = displayNameEl ? displayNameEl.textContent : channelId;
+                    channels[channelId] = {
+                        id: channelId,
+                        name: displayName
+                    };
+                }
+
+                allPrograms = [];
+                availableSports = new Set();
+                const programmes = xmlDoc.getElementsByTagName('programme');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // Compter les chaînes gratuites trouvées
+                const freeChannelsFound = new Set();
+
+                for (let prog of programmes) {
+                    const start = prog.getAttribute('start');
+                    const stop = prog.getAttribute('stop');
+                    const channelId = prog.getAttribute('channel');
+
+                    const progDate = parseXMLTVDate(start);
+                    const dayDiff = Math.floor((progDate - today) / (1000 * 60 * 60 * 24));
+
+                    // Filter pour 3 jours à partir d'aujourd'hui
+                    if (dayDiff < 0 || dayDiff > 2) continue;
+                    
+                    // Check si chaîne gratuite
+                    if (!isFreeChannel(channelId)) continue;
+
+                    freeChannelsFound.add(channelId);
+
+                    const titleEl = prog.querySelector('title');
+                    const descEl = prog.querySelector('desc');
+                    const categoryEl = prog.querySelector('category');
+
+                    const title = titleEl ? titleEl.textContent : 'Sans titre';
+                    const desc = descEl ? descEl.textContent : '';
+                    const category = categoryEl ? categoryEl.textContent : '';
+
+                    // Check si c'est un sport (catégorie "sport" uniquement)
+                    if (category.toLowerCase() !== 'sport') continue;
+
+                    // Extraire le type de sport du titre et description
+                    const sportType = extractSportType(title, desc);
+                    
+                    if (sportType) {
+                        availableSports.add(sportType);
+                    }
+
+                    allPrograms.push({
+                        title,
+                        description: desc,
+                        category,
+                        sportType: sportType || 'autre',
+                        channel: channelId,
+                        channelName: getSafeChannelName(channelId),
+                        start: progDate,
+                        stop: parseXMLTVDate(stop),
+                        startStr: formatTime(progDate),
+                        dayIndex: dayDiff
+                    });
+                }
+
+                if (allPrograms.length === 0) {
+                    const foundChannelsText = freeChannelsFound.size > 0 
+                        ? `Chaînes gratuites trouvées : ${Array.from(freeChannelsFound).map(id => getSafeChannelName(id)).join(', ')}.`
+                        : 'Aucune chaîne gratuite trouvée.';
+                    showStatus(`Aucun programme de sport trouvé. ${foundChannelsText}`, 'error');
+                    document.getElementById('sportsFilter').style.display = 'none';
+                } else {
+                    const foundChannelsText = Array.from(freeChannelsFound).map(id => getSafeChannelName(id)).join(', ');
+                    showStatus(`✓ ${allPrograms.length} programmes de sport chargés! (Chaînes: ${foundChannelsText})`, 'success');
+                    setTimeout(() => hideStatus(), 4000);
+                    
+                    // Créer les checkboxes pour les sports
+                    createSportsCheckboxes();
+                    displayPrograms();
+                }
+            } catch (error) {
+                showStatus(`Erreur : ${error.message}`, 'error');
+            }
+        }
+
+        function extractSportType(title, desc) {
+            const text = `${title} ${desc}`.toLowerCase();
+            
+            const sportTypes = {
+                'football': ['football', 'foot', 'ligue 1', 'ligue2', 'champions', 'coupe', 'psg', 'marseille', 'lyon', 'bordeaux'],
+                'rugby': ['rugby', 'top 14', 'six nations', 'test match'],
+                'tennis': ['tennis', 'roland garros', 'wimbledon', 'us open', 'australian open', 'atp', 'wta'],
+                'basket': ['basket', 'basketball', 'nba', 'euroligue', 'bball'],
+                'cyclisme': ['cyclisme', 'cycliste', 'tour de france', 'tour d\'italie', 'tour d\'espagne', 'giro', 'vuelta'],
+                'formule 1': ['formule 1', 'f1', 'grand prix', 'formula 1'],
+                'moto': ['moto', 'motogp', 'motocross', 'superbike'],
+                'handball': ['handball', 'ligue des champions', 'championnats'],
+                'volley': ['volley', 'volleyball', 'volley-ball'],
+                'golf': ['golf', 'pga', 'masters'],
+                'natation': ['natation', 'piscine', 'swimming'],
+                'athlétisme': ['athlétisme', 'athletics', 'track and field'],
+                'ski': ['ski', 'ski alpin', 'cross-country', 'biathlon'],
+                'autre': []
+            };
+            
+            for (let [sport, keywords] of Object.entries(sportTypes)) {
+                for (let keyword of keywords) {
+                    if (text.includes(keyword)) {
+                        return sport;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function createSportsCheckboxes() {
+            const sportsFilter = document.getElementById('sportsFilter');
+            const sportsCheckboxes = document.getElementById('sportsCheckboxes');
+            sportsCheckboxes.innerHTML = '';
+            
+            // Trier les sports
+            const sortedSports = Array.from(availableSports).sort();
+            
+            sortedSports.forEach(sport => {
+                const label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '8px';
+                label.style.cursor = 'pointer';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = sport;
+                checkbox.checked = true;
+                checkbox.style.cursor = 'pointer';
+                checkbox.style.width = '18px';
+                checkbox.style.height = '18px';
+                
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectedSports.add(sport);
+                    } else {
+                        selectedSports.delete(sport);
+                    }
+                    updateProgramsDisplay();
+                });
+                
+                // Initialiser la sélection
+                selectedSports.add(sport);
+                
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(sport));
+                sportsCheckboxes.appendChild(label);
+            });
+            
+            sportsFilter.style.display = 'block';
+        }
+
+        async function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                if (window.pako) {
+                    resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error('Impossible de charger le script'));
+                document.head.appendChild(script);
+            });
+        }
+
+        function parseXMLTVDate(dateStr) {
+            // Format: "20240528120000 +0200"
+            const match = dateStr.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+            if (!match) return new Date();
+            
+            return new Date(
+                parseInt(match[1]),
+                parseInt(match[2]) - 1,
+                parseInt(match[3]),
+                parseInt(match[4]),
+                parseInt(match[5]),
+                parseInt(match[6])
+            );
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function isFreeChannel(channelId) {
+            const lowerChannel = channelId.toLowerCase();
+            for (let channelName in freeChannels) {
+                if (freeChannels[channelName].some(id => lowerChannel.includes(id.toLowerCase()))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function getSafeChannelName(channelId) {
+            const lowerChannel = channelId.toLowerCase();
+            for (let channelName in freeChannels) {
+                if (freeChannels[channelName].some(id => lowerChannel.includes(id.toLowerCase()))) {
+                    return channelName;
+                }
+            }
+            return channelId;
+        }
+
+        function isSportProgram(title, desc, category) {
+            const text = `${title} ${desc} ${category}`.toLowerCase();
+            return sportKeywords.some(keyword => text.includes(keyword));
+        }
+
+        function displayPrograms() {
+            // Créer les tabs des jours
+            const daysTabs = document.getElementById('daysTabs');
+            daysTabs.innerHTML = '';
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let i = 0; i < 3; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() + i);
+                
+                const tab = document.createElement('button');
+                tab.className = `day-tab ${i === 0 ? 'active' : ''}`;
+                tab.textContent = formatDayLabel(date);
+                tab.onclick = () => selectDay(i, tab);
+                daysTabs.appendChild(tab);
+            }
+            
+            selectedDay = 0;
+            updateProgramsDisplay();
+        }
+
+        function formatDayLabel(date) {
+            const options = { weekday: 'short', day: 'numeric', month: 'short' };
+            return date.toLocaleDateString('fr-FR', options);
+        }
+
+        function selectDay(dayIndex, tabElement) {
+            selectedDay = dayIndex;
+            
+            document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+            tabElement.classList.add('active');
+            
+            updateProgramsDisplay();
+        }
+
+        function updateProgramsDisplay() {
+            const programsContainer = document.getElementById('programs');
+            
+            let filtered = allPrograms.filter(p => p.dayIndex === selectedDay);
+            
+            // Filtrer par sports sélectionnés
+            if (selectedSports.size > 0) {
+                filtered = filtered.filter(p => selectedSports.has(p.sportType));
+            }
+            
+            // Trier par heure
+            filtered.sort((a, b) => a.start - b.start);
+            
+            if (filtered.length === 0) {
+                programsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>Aucun programme trouvé</p>
+                        <small>Essayez de sélectionner d'autres sports ou une autre date</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            programsContainer.innerHTML = filtered.map(prog => `
+                <div class="program-card">
+                    <div class="program-header">
+                        <div class="program-time"><i class="fas fa-clock"></i> ${prog.startStr}</div>
+                        <h2 class="program-title">${prog.title}</h2>
+                        <span class="program-channel">${prog.channelName || getSafeChannelName(prog.channel)}</span>
+                    </div>
+                    ${prog.description ? `<p style="color: #666; margin: 10px 0;">${prog.description}</p>` : ''}
+                    <div class="program-details">
+                        <div class="detail-item">
+                            <strong>Sport</strong>
+                            ${prog.sportType}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Durée</strong>
+                            ${Math.round((prog.stop - prog.start) / (1000 * 60))} min
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Charger l'URL par défaut au démarrage
+        window.addEventListener('load', loadFromURL);
+    </script>
+</body>
+</html>
